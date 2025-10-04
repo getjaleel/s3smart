@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "s3smart"
+version = "0.1.0"
+description = "High-throughput S3 copy/sync utility with resume, checksums, and browse mode"
+authors = [
+    { name = "Your Name", email = "your@email.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "boto3",
+    "tqdm"
+]
+
+[project.scripts]
+s3smart = "s3smart:main"

@@ -1,0 +1,62 @@
+# --- Python build and cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+*.bak
+*.swp
+
+# --- Virtual environments ---
+.venv/
+env/
+venv/
+
+# --- Build artifacts ---
+build/
+dist/
+*.egg-info/
+*.eggs/
+*.manifest
+*.spec
+
+# --- IDE / Editor settings ---
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
+
+# --- Test / Coverage ---
+.coverage
+htmlcov/
+pytest_cache/
+.tox/
+.mypy_cache/
+
+# --- Local configs ---
+s3smart.json
+*.local.json
+
+# --- Archives / Generated files ---
+*.zip
+*.tar
+*.gz
+*.tgz
+
+# --- Temporary / Runtime data ---
+tmp/
+temp/
+*.pid
+*.out
+*.log
+
+# --- Project-specific ---
+s3smart.egg-info/
+__pycache__/
+
+/home/jaleel/s3smart/kali-linux-2024.3-installer-netinst-arm64.iso
