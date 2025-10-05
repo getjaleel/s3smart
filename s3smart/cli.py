@@ -75,7 +75,7 @@ def load_config(config_path: Path | None = None) -> dict:
     print(f"🪄 Creating default configuration at {CONFIG_PATH_LOCAL}")
     with open(CONFIG_PATH_LOCAL, "w") as f:
         json.dump(default_cfg, f, indent=2)
-    print(f"✅ Default config created: {CONFIG_PATH_LOCAL}")
+    print(f"Default config created: {CONFIG_PATH_LOCAL}")
     return default_cfg
 
 # --------------------------
