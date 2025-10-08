@@ -19,6 +19,7 @@ A high-throughput, intelligent S3 copy/sync utility.
 - Opt-in checksum validation (`--checksum`)
 - Summary report after each run
 - Works with AWS S3 and S3-compatible storage
+- s3smart supports all standard AWS authentication methods — including SSO profiles, named profiles, and temporary credentials
 
 ## Install
 
@@ -26,6 +27,39 @@ A high-throughput, intelligent S3 copy/sync utility.
 git clone https://github.com/getjaleel/s3smart.git
 cd s3smart
 pip install -e .
+```
+
+## Setting the Profile via Environment Variable
+macOS / Linux (bash / zsh):
+```
+export AWS_PROFILE=my-sso-profile
+s3smart browse
+
+```
+Windows PowerShell:
+```
+$env:AWS_PROFILE = "my-sso-profile"
+s3smart browse
+
+```
+To make it permanent:
+```
+[System.Environment]::SetEnvironmentVariable('AWS_PROFILE', 'my-sso-profile', 'User')
+```
+Windows CMD:
+```
+set AWS_PROFILE=my-sso-profile
+s3smart browse
+
+```
+
+## Profiles
+```
+s3smart browse --profile my-sso-profile
+```
+or equivalent:
+```
+s3smart --profile my-sso-profile browse
 ```
 ## Upload a folder
 ```
