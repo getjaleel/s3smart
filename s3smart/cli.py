@@ -398,6 +398,46 @@ def cmd_browse(args, s3, config):
             if itm[0] == "DIR":
                 prefix = itm[1]
 
+
+
+def cmd_sync(args, s3, config) -> dict:
+    stats = {"uploaded": 0, "downloaded": 0, "skipped": 0, "failed": 0}
+    src_is_s3 = is_s3_uri(args.src)
+    dest_is_s3 = is_s3_uri(args.dest)
+
+    if src_is_s3 and not dest_is_s3:
+        # S3 -> local
+        src = parse_s3_url(args.src)
+        dest = args.dest
+        resp = s3.list_objects_v2(Bucket=src.bucket, Prefix=src.key)
+        for obj in resp.get("Contents", []):
+            key = obj["Key"]
+            dest_path = os.path.join(dest, os.path.basename(key))
+            size = obj["Size"]
+            print(f"Downloading {key} -> {dest_path}")
+            pbar = tqdm(total=size, unit="B", unit_scale=True, desc="Sync download", dynamic_ncols=True)
+            parallel_download(s3, S3Url(src.bucket, key), dest_path, args.workers, args.part_size, pbar, RateLimiter(args.max_mbps))
+            pbar.close()
+            stats["downloaded"] += 1
+    elif not src_is_s3 and dest_is_s3:
+        # Local -> S3
+        src = args.src
+        dest = parse_s3_url(args.dest)
+        for root, _, files in os.walk(src):
+            for f in files:
+                local = os.path.join(root, f)
+                rel_key = os.path.relpath(local, src).replace("\\", "/")
+                s3url = S3Url(dest.bucket, dest.key.rstrip("/") + "/" + rel_key)
+                print(f"Uploading {local} -> s3://{s3url.bucket}/{s3url.key}")
+                fsize = os.path.getsize(local)
+                pbar = tqdm(total=fsize, unit="B", unit_scale=True, desc="Sync upload", dynamic_ncols=True)
+                multipart_upload(s3, local, s3url, args.workers, args.part_size, pbar, RateLimiter(args.max_mbps))
+                pbar.close()
+                stats["uploaded"] += 1
+    else:
+        print("Sync between two S3 buckets or two local folders is not implemented yet.")
+    return stats
+
 # --------------------------
 # Parser 
 # --------------------------
