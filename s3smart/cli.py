@@ -13,10 +13,17 @@ import threading
 import time
 from pathlib import Path
 from urllib.parse import urlparse
+from typing import Optional
+
+from s3smart.version import get_version_info
+
 import boto3
 from botocore.client import Config as BotoConfig
 from botocore.exceptions import BotoCoreError, ClientError
 from tqdm import tqdm
+
+
+
 
 # --------------------------
 # Constants
@@ -45,19 +52,19 @@ def load_config(config_path: Path | None = None) -> dict:
     # Priority: custom path
     if config_path and config_path.exists():
         cfg = read_json(config_path)
-        print(f"🔧 Loaded config from custom path: {config_path}")
+        print(f"================Loaded config from custom path: {config_path}===============")
         return cfg
 
     # Local project config
     if CONFIG_PATH_LOCAL.exists():
         cfg = read_json(CONFIG_PATH_LOCAL)
-        print(f"🔧 Loaded config from local project: {CONFIG_PATH_LOCAL}")
+        print(f"================Loaded config from local project: {CONFIG_PATH_LOCAL}===============")
         return cfg
 
     # Home config
     if CONFIG_PATH_HOME.exists():
         cfg = read_json(CONFIG_PATH_HOME)
-        print(f"🔧 Loaded config from user home: {CONFIG_PATH_HOME}")
+        print(f"================Loaded config from user home: {CONFIG_PATH_HOME}===============")
         return cfg
 
     # No config found → create default
@@ -412,6 +419,8 @@ def build_parser(config: dict) -> argparse.ArgumentParser:
     p.add_argument("--retries", type=int, default=8)
     p.add_argument("--max-pool", type=int, default=64)
     p.add_argument("--config", type=str, help="Path to a custom s3smart.json configuration file")
+    p.add_argument("--profile", type=str, help="AWS CLI profile name to use (e.g., --profile my-sso-profile)")
+
 
     sub = p.add_subparsers(dest="cmd", required=True)
     common = argparse.ArgumentParser(add_help=False)
@@ -422,6 +431,7 @@ def build_parser(config: dict) -> argparse.ArgumentParser:
     common.add_argument("--checksum", action="store_true")
     common.add_argument("--max-mbps", type=float)
     common.add_argument("--force", action="store_true")
+    common.add_argument("--profile", type=str, help="AWS CLI profile name")  # ← adding   profile support
 
     up = sub.add_parser("upload", parents=[common])
     up.add_argument("src")
@@ -446,6 +456,7 @@ def build_parser(config: dict) -> argparse.ArgumentParser:
 def main():
     os.system("cls" if os.name == "nt" else "clear")
     print("s3smart - Fast, Reliable AWS S3 Transfers & Sync Utility\n")
+    print(get_version_info() + "\n")
     # print("=== S3SMART Utility ===\n")
 
     base_parser = argparse.ArgumentParser(add_help=False)
@@ -456,7 +467,30 @@ def main():
     config = load_config(config_path)
 
     args = build_parser(config).parse_args()
-    s3 = make_s3_client(args.region, args.max_pool, args.retries, getattr(args, "endpoint_url", None))
+    # Use AWS profile if provided
+    if args.profile:
+        session = boto3.Session(profile_name=args.profile)
+    else:
+        session = boto3.Session()
+
+    print(f"→ Using AWS profile: {session.profile_name or 'default'}  |  region: {session.region_name or 'auto'}")
+
+    s3 = session.client(
+        "s3",
+        region_name=args.region,
+        endpoint_url=getattr(args, "endpoint_url", None),
+        config=BotoConfig(
+            retries={"max_attempts": max(3, args.retries), "mode": "standard"},
+            max_pool_connections=max(10, args.max_pool),
+            signature_version="s3v4",
+        ),
+    )
+    try:
+        s3.list_buckets()
+    except ClientError as e:
+        print(f"Warning: Unable to list buckets ({e.response['Error']['Message']})")
+
+
 
     try:
         if args.cmd == "upload":
