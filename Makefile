@@ -1,25 +1,73 @@
-PYTHON = python3
-VENV = .venv
-SRC = s3smart.py
+# ==========================================================
+# s3smart Makefile
+# Fast, Reliable AWS S3 Transfers & Sync Utility
+# ==========================================================
 
-.PHONY: all install lint run clean
+PACKAGE = s3smart
+PYTHON = python
+PIP = pip
+SRC = $(PACKAGE)
+VENV ?= .venv
 
-all: install lint
+# ----------------------------------------------------------
+# Setup & Install
+# ----------------------------------------------------------
 
+.PHONY: install
 install:
-	@echo "Creating virtual environment..."
-	@test -d $(VENV) || $(PYTHON) -m venv $(VENV)
-	@. $(VENV)/bin/activate; pip install --upgrade pip
-	@. $(VENV)/bin/activate; pip install boto3 tqdm flake8
-	@echo "Checking for s3smart.json..."
-	@[ -f s3smart.json ] || echo '{ "browse_part_size_mb": 128, "default_part_size_mb": 256, "default_workers": 16 }' > s3smart.json
-	@echo "Default s3smart.json ready."
+	@echo "🚀 Installing $(PACKAGE) in editable mode..."
+	$(PIP) install -e .
 
+.PHONY: reinstall
+reinstall:
+	@echo "♻️  Reinstalling package..."
+	$(PIP) uninstall -y $(PACKAGE) || true
+	$(PIP) install -e .
+
+.PHONY: deps
+deps:
+	@echo "📦 Installing dependencies..."
+	$(PIP) install -r requirements.txt || true
+	$(PIP) install boto3 tqdm colorama flake8
+
+# ----------------------------------------------------------
+# Lint & Check
+# ----------------------------------------------------------
+
+.PHONY: lint
 lint:
-	@. $(VENV)/bin/activate; flake8 $(SRC)
+	@echo "🧹 Running flake8 linting..."
+	flake8 $(SRC) --max-line-length=88 --ignore=E203,W503
 
-run:
-	@. $(VENV)/bin/activate; $(PYTHON) $(SRC) browse
+.PHONY: fmt
+fmt:
+	@echo "✨ Formatting with black..."
+	black $(SRC)
 
+# ----------------------------------------------------------
+# Run Commands
+# ----------------------------------------------------------
+
+.PHONY: browse
+browse:
+	@echo "🔍 Launching S3 browser..."
+	$(PYTHON) -m $(PACKAGE).cli browse
+
+.PHONY: version
+version:
+	@$(PYTHON) -m $(PACKAGE).cli --version
+
+# ----------------------------------------------------------
+# Clean Up
+# ----------------------------------------------------------
+
+.PHONY: clean
 clean:
-	rm -rf $(VENV) __pycache__ *.egg-info build dist
+	@echo "🧼 Cleaning build artifacts..."
+	rm -rf build dist *.egg-info __pycache__ */__pycache__
+
+.PHONY: reset
+reset:
+	@echo "🔥 Full reset..."
+	rm -rf $(VENV) build dist *.egg-info __pycache__ */__pycache__
+	find . -type f -name "*.pyc" -delete

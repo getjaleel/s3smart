@@ -1,3 +1,8 @@
-boto3>=1.34.0
-botocore>=1.34.0
-tqdm>=4.66.0
+# Core dependencies for s3smart utility
+boto3>=1.28.0
+tqdm>=4.65.0
+colorama>=0.4.6
+
+# Developer tools
+flake8>=6.0.0
+black>=23.0.0
